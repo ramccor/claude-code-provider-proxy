@@ -47,7 +47,7 @@ See the config section in `src/main.py` for more configuration options.
 
 #### Useful environment variables
 
-Use those when launching `claude`, not the prox
+Use those when launching `claude`, not the proxy.
 
 `CLAUDE_CODE_EXTRA_BODY`
 `MAX_THINKING_TOKENS`

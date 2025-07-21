@@ -60,8 +60,19 @@ Use those when launching `claude`, not the proxy.
 
 ### Running the Server
 
+**Local Development:**
 ```bash
 uv run src/main.py
+```
+
+**Docker:**
+```bash
+# Build and run with docker-compose
+docker-compose up --build
+
+# Or build and run manually
+docker build -f docker/Dockerfile -t claude-code-proxy .
+docker run -p 8080:8080 --env-file .env claude-code-proxy
 ```
 
 ### Running Claude Code

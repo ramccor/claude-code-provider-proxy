@@ -1570,6 +1570,10 @@ async def create_message_proxy(
     if anthropic_request.metadata and anthropic_request.metadata.get("user_id"):
         openai_params["user"] = str(anthropic_request.metadata.get("user_id"))
 
+    # openrouter rejects messages with 'user' longer than 128 characters
+    if len(openai_params["user"]) > 128:
+        openai_params["user"] = openai_params["user"][:128]
+
     debug(
         LogRecord(
             LogEvent.OPENAI_REQUEST.value,

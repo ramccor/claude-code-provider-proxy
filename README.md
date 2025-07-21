@@ -43,9 +43,11 @@ SMALL_MODEL_NAME=google/gemini-2.0-flash-lite-001
 LOG_LEVEL=DEBUG
 ```
 
-See `config.py` for more configuration options.
+See the config section in `src/main.py` for more configuration options.
 
 #### Useful environment variables
+
+Use those when launching `claude`, not the prox
 
 `CLAUDE_CODE_EXTRA_BODY`
 `MAX_THINKING_TOKENS`

@@ -1,0 +1,20 @@
+services:
+  claude-code-proxy:
+    container_name: claude-code-proxy
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    ports:
+      - "127.0.0.1:8080:8080"
+    env_file:
+      - .env
+    volumes:
+      - ./log.jsonl:/app/log.jsonl
+    restart: unless-stopped
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8080
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL

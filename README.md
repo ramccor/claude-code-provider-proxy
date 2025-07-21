@@ -37,15 +37,19 @@ Key features:
 Create a `.env` file with your configuration:
 
 ```env
-OPENAI_API_KEY=<key>
+OPENAI_API_KEY=<your openrouter api key>
 BIG_MODEL_NAME=google/gemini-2.5-pro-preview
 SMALL_MODEL_NAME=google/gemini-2.0-flash-lite-001
 LOG_LEVEL=DEBUG
 ```
 
-See `config.py` for more configuration options.
+See the config section in `src/main.py` for more configuration options.
+
+Note: you can use environment variables instead of an `.env` file, but note that any value of the `.env` file that is also present in the environment will be overwritten (the environment takes priority). In particular, if you set `OPENAI_API_KEY` in `.env` to the `OPENROUTER_API_KEY`, if you don't `unset OPENAI_API_KEY`, the key received by `src/main.py` will be the one from OpenAI instead of openrouter.ai.
 
 #### Useful environment variables
+
+Use those when launching `claude`, not the proxy.
 
 `CLAUDE_CODE_EXTRA_BODY`
 `MAX_THINKING_TOKENS`

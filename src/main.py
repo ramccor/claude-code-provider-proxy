@@ -45,7 +45,7 @@ class Settings(BaseSettings):
     big_model_name: str
     small_model_name: str
     base_url: str = "https://openrouter.ai/api/v1"
-    referrer_url: str = "http://localhost:8080/claude_proxy"
+    referer_url: str = "http://localhost:8080/claude_proxy"
 
     app_name: str = "AnthropicProxy"
     app_version: str = "0.2.0"
@@ -444,7 +444,7 @@ try:
         api_key=settings.openai_api_key,
         base_url=settings.base_url,
         default_headers={
-            "HTTP-Referer": settings.referrer_url,
+            "HTTP-Referer": settings.referer_url,
             "X-Title": settings.app_name,
         },
         timeout=180.0,

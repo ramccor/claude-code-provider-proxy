@@ -45,6 +45,8 @@ LOG_LEVEL=DEBUG
 
 See the config section in `src/main.py` for more configuration options.
 
+Note: you can use environment variables instead of an `.env` file, but note that any value of the `.env` file that is also present in the environment will be overwritten (the environment takes priority).
+
 #### Useful environment variables
 
 Use those when launching `claude`, not the proxy.

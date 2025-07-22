@@ -4,6 +4,16 @@ A proxy service that allows Anthropic API requests (especially from [Claude Code
 
 ![Claude Proxy Logo](docs/cover.png)
 
+## Table of Contents
+
+- [Overview](#overview)
+- [Example](#example)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+- [Misc](#misc)
+- [Known Working Models](#known-working-models)
+- [License](#license)
+
 ## Overview
 
 Claude Proxy provides a compatibility layer between [Claude Code](https://github.com/anthropics/claude-code) and alternative models available through [OpenRouter.ai](https://openrouter.ai/) or your chosen base URL. It dynamically reroutes LLM requests from Claude Code to the providers you want to use.

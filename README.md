@@ -30,6 +30,7 @@ Key features:
 
 - Python 3.10+
 - [OpenRouter](https://openrouter.ai/) API key
+- [Claude Code](https://github.com/anthropics/claude-code) installed (as of writing the proxy is tested on version `1.0.56`)
 - *Optional: [uv](https://github.com/astral-sh/uv) if you don't want to use docker*
 
 ### Configuration

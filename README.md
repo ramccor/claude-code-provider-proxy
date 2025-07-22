@@ -99,16 +99,14 @@ The proxy server exposes the following endpoints:
 ## Known Working Models
 
 * As `BIG_MODEL_NAME`:
-    * ```
-    anthropic/claude-sonnet-4
-    google/gemini-2.5-pro
-    ```
+    * `anthropic/claude-sonnet-4`
+
+    * problematic
+        * `google/gemini-2.5-pro`: seems to sometimes struggle to respect the edit format expected by `claude`
 
 * As `SMALL_MODEL_NAME`:
-    * ```
-    anthropic/claude-3.5-haiku
-    google/gemini-2.5-flash
-    ```
+    * anthropic/claude-3.5-haiku
+    * google/gemini-2.5-flash
 
 ## License
 

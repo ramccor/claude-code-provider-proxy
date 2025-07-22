@@ -1,6 +1,6 @@
 # Claude Code Provider Proxy
 
-A proxy service that allows Anthropic API requests to be routed through an OpenAI-compatible URL to access alternative models.
+A proxy service that allows Anthropic API requests (especially from [Claude Code](https://github.com/anthropics/claude-code) to be routed through an OpenAI-compatible URL to access alternative models.
 
 ![Claude Proxy Logo](docs/cover.png)
 

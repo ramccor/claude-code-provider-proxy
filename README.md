@@ -20,23 +20,24 @@ Key features:
 
 ## Example
 
-**Model**: `deepseek/deepseek-chat-v3-0324`
-
 ![Claude Proxy Example](docs/example.png)
 
 ## Getting Started
 
+It is recommended to use docker, using uv is recommended for development only.
+
 ### Prerequisites
 
-- [Claude Code](https://github.com/anthropics/claude-code) installed (as of writing the proxy is tested on version `1.0.56`, which you can install with `npm install -g @anthropic-ai/claude-code@1.0.56`)
+- [Claude Code](https://github.com/anthropics/claude-code) installed (as of July 2025 the proxy is tested on version `1.0.56`, which you can install with `npm install -g @anthropic-ai/claude-code@1.0.56`)
 - An [OpenRouter](https://openrouter.ai/) API key
 - *Optional if you don't want to use docker*
     - *Python 3.10+*
     - *[uv](https://github.com/astral-sh/uv)*
 
-### Configuration
 
-Create a `.env` file with your configuration:
+1. Download the repo: `git clone https://github.com/ujisati/claude-code-provider-proxy/`
+
+2. Either modify the `environment:` in `docker-compose` or create a `.env` file at the root of the repo with for example:
 
 ```env
 OPENAI_API_KEY=<your openrouter api key>
@@ -45,13 +46,38 @@ SMALL_MODEL_NAME=google/gemini-2.0-flash-lite-001
 LOG_LEVEL=DEBUG
 ```
 
-See the config section in `src/main.py` for more configuration options.
+A list of known working models can be found at the bottom of that README.md.
 
-Note: you can use environment variables instead of an `.env` file, but note that any value of the `.env` file that is also present in the environment will be overwritten (the environment takes priority). In particular, if you set `OPENAI_API_KEY` in `.env` to the `OPENROUTER_API_KEY`, if you don't `unset OPENAI_API_KEY`, the key received by `src/main.py` will be the one from OpenAI instead of [OpenRouter.ai](https://openrouter.ai/).
+For more configuration options, see the `Settings` class in `src/main.py`.
 
-#### Useful environment variables
+*Note: you can use environment variables instead of an `.env` file, but note that any value of the `.env` file that is also present in the environment will be overwritten (the environment takes priority). In particular, if you set `OPENAI_API_KEY` in `.env` to the `OPENROUTER_API_KEY`, if you don't `unset OPENAI_API_KEY`, the key received by `src/main.py` will be the one from OpenAI instead of [OpenRouter.ai](https://openrouter.ai/).*
 
-Use those when launching `claude`, not the proxy.
+3. Run the proxy:
+
+**Docker: (recommended)**
+```bash
+# Build and run with docker-compose
+docker-compose up --build --detach
+
+# Or build and run manually
+docker build -f docker/Dockerfile -t claude-code-proxy .
+docker run -p 8080:8080 --env-file .env claude-code-proxy
+```
+
+**Local Development:**
+```bash
+uv run src/main.py
+```
+
+4. Run Claude Code
+
+```bash
+ANTHROPIC_BASE_URL=http://localhost:8080 claude
+```
+
+To make a more permanent alias you can run `echo 'alias claude="ANTHROPIC_BASE_URL=http://localhost:8080 claude"' >> ~/.bashrc` for example.
+
+5. Optional: to further customize `claude`, there are environment variables you can modify, for example:
 
 `CLAUDE_CODE_EXTRA_BODY`
 `MAX_THINKING_TOKENS`
@@ -60,36 +86,29 @@ Use those when launching `claude`, not the proxy.
 `DISABLE_TELEMETRY`
 `DISABLE_ERROR_REPORTING`
 
-### Running the Server
+*Note: These variables modify `claude`, **not** the proxy.*
 
-**Local Development:**
-```bash
-uv run src/main.py
-```
-
-**Docker:**
-```bash
-# Build and run with docker-compose
-docker-compose up --build
-
-# Or build and run manually
-docker build -f docker/Dockerfile -t claude-code-proxy .
-docker run -p 8080:8080 --env-file .env claude-code-proxy
-```
-
-### Running Claude Code
-
-```bash
-ANTHROPIC_BASE_URL=http://localhost:8080 claude
-```
-
-## Usage
+## Misc
 
 The proxy server exposes the following endpoints:
 
 - `POST /v1/messages`: Create a message (main endpoint)
 - `POST /v1/messages/count_tokens`: Count tokens for a request
 - `GET /`: Health check endpoint
+
+## Known Working Models
+
+* As `BIG_MODEL_NAME`:
+    * ```
+    anthropic/claude-sonnet-4
+    google/gemini-2.5-pro
+    ```
+
+* As `SMALL_MODEL_NAME`:
+    * ```
+    anthropic/claude-3.5-haiku
+    google/gemini-2.5-flash
+    ```
 
 ## License
 

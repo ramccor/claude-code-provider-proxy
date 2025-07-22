@@ -1366,26 +1366,29 @@ app = fastapi.FastAPI(
 
 def select_target_model(client_model_name: str, request_id: str) -> str:
     """Selects the target OpenRouter model based on the client's request."""
-    client_model_lower = client_model_name.lower()
     target_model: str
-
-    if "opus" in client_model_lower or "sonnet" in client_model_lower:
-        target_model = settings.big_model_name
-    elif "haiku" in client_model_lower:
-        target_model = settings.small_model_name
+    if client_model_name.startswith("openrouter/"):
+        target_model = client_model_name[len("openrouter/") :]
     else:
-        target_model = settings.small_model_name
-        warning(
-            LogRecord(
-                event=LogEvent.MODEL_SELECTION.value,
-                message=f"Unknown client model '{client_model_name}', defaulting to SMALL model '{target_model}'.",
-                request_id=request_id,
-                data={
-                    "client_model": client_model_name,
-                    "default_target_model": target_model,
-                },
+        client_model_lower = client_model_name.lower()
+
+        if "opus" in client_model_lower or "sonnet" in client_model_lower:
+            target_model = settings.big_model_name
+        elif "haiku" in client_model_lower:
+            target_model = settings.small_model_name
+        else:
+            target_model = settings.small_model_name
+            warning(
+                LogRecord(
+                    event=LogEvent.MODEL_SELECTION.value,
+                    message=f"Unknown client model '{client_model_name}', defaulting to SMALL model '{target_model}'.",
+                    request_id=request_id,
+                    data={
+                        "client_model": client_model_name,
+                        "default_target_model": target_model,
+                    },
+                )
             )
-        )
 
     debug(
         LogRecord(

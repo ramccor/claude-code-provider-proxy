@@ -6,7 +6,7 @@ A proxy service that allows Anthropic API requests to be routed through an OpenA
 
 ## Overview
 
-Claude Proxy provides a compatibility layer between Claude Code and alternative models available through OpenRouter or your chosen base URL. It dynamically selects models based on the requested Claude model name, mapping Opus/Sonnet to a configured "big model" and Haiku to a "small model".
+Claude Proxy provides a compatibility layer between Claude Code and alternative models available through [OpenRouter.ai](https://openrouter.ai/) or your chosen base URL. It dynamically selects models based on the requested Claude model name, mapping Opus/Sonnet to a configured "big model" and Haiku to a "small model".
 
 Key features:
 
@@ -29,7 +29,7 @@ Key features:
 ### Prerequisites
 
 - Python 3.10+
-- OpenRouter API key
+- [OpenRouter](https://openrouter.ai/) API key
 - *Optional: [uv](https://github.com/astral-sh/uv) if you don't want to use docker*
 
 ### Configuration
@@ -45,7 +45,7 @@ LOG_LEVEL=DEBUG
 
 See the config section in `src/main.py` for more configuration options.
 
-Note: you can use environment variables instead of an `.env` file, but note that any value of the `.env` file that is also present in the environment will be overwritten (the environment takes priority). In particular, if you set `OPENAI_API_KEY` in `.env` to the `OPENROUTER_API_KEY`, if you don't `unset OPENAI_API_KEY`, the key received by `src/main.py` will be the one from OpenAI instead of openrouter.ai.
+Note: you can use environment variables instead of an `.env` file, but note that any value of the `.env` file that is also present in the environment will be overwritten (the environment takes priority). In particular, if you set `OPENAI_API_KEY` in `.env` to the `OPENROUTER_API_KEY`, if you don't `unset OPENAI_API_KEY`, the key received by `src/main.py` will be the one from OpenAI instead of [OpenRouter.ai](https://openrouter.ai/).
 
 #### Useful environment variables
 

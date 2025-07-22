@@ -6,7 +6,7 @@ A proxy service that allows Anthropic API requests to be routed through an OpenA
 
 ## Overview
 
-Claude Proxy provides a compatibility layer between Claude Code and alternative models available through [OpenRouter.ai](https://openrouter.ai/) or your chosen base URL. It dynamically selects models based on the requested Claude model name, mapping Opus/Sonnet to a configured "big model" and Haiku to a "small model".
+Claude Proxy provides a compatibility layer between [Claude Code](https://github.com/anthropics/claude-code) and alternative models available through [OpenRouter.ai](https://openrouter.ai/) or your chosen base URL. It dynamically reroutes LLM requests from Claude Code to the providers you want to use.
 
 Key features:
 

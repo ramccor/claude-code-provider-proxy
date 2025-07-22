@@ -28,10 +28,11 @@ Key features:
 
 ### Prerequisites
 
-- Python 3.10+
-- [OpenRouter](https://openrouter.ai/) API key
-- [Claude Code](https://github.com/anthropics/claude-code) installed (as of writing the proxy is tested on version `1.0.56`)
-- *Optional: [uv](https://github.com/astral-sh/uv) if you don't want to use docker*
+- [Claude Code](https://github.com/anthropics/claude-code) installed (as of writing the proxy is tested on version `1.0.56`, which you can install with `npm install -g @anthropic-ai/claude-code@1.0.56`)
+- An [OpenRouter](https://openrouter.ai/) API key
+- *Optional if you don't want to use docker*
+    - *Python 3.10+*
+    - *[uv](https://github.com/astral-sh/uv)*
 
 ### Configuration
 

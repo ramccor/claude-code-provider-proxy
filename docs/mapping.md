@@ -47,9 +47,9 @@
 
 ## Introduction
 
-This document provides a detailed, field-by-field mapping between Anthropic’s **Claude v3 Messages API** and OpenAI’s **GPT-4 (Chat Completions API)**, based on deep research into both APIs. It covers translating requests (Anthropic -> OpenAI) and responses (OpenAI -> Anthropic), focusing on accuracy for features like message roles, content blocks, system prompts, tool usage (function calling), and streaming. This mapping is crucial for building a proxy server that allows clients using the Anthropic API format to interact seamlessly with OpenAI's backend. Differences in fields, values, and behavior are noted, along with required transformations and potential gaps.
+This document provides a detailed, field-by-field mapping between Anthropic's **Claude v3 Messages API** and OpenAI's **GPT-4 (Chat Completions API)**, based on deep research into both APIs. It covers translating requests (Anthropic -> OpenAI) and responses (OpenAI -> Anthropic), focusing on accuracy for features like message roles, content blocks, system prompts, tool usage, and streaming. This mapping is crucial for building a proxy server that allows clients using the Anthropic API format to interact seamlessly with OpenAI's backend. Differences in fields, values, and behavior are noted, along with required transformations and potential gaps.
 
-**Scope:** Assumes a stateless translator (full context per request) supporting Claude 3 features via OpenAI's equivalent mechanisms (e.g., function calling). The reference models are Claude 3 and GPT-4/GPT-4-Turbo.
+**Scope:** Assumes a stateless translator (full context per request) supporting Claude 3 features via OpenAI's equivalent mechanisms. The reference models are Claude 3 and GPT-4/GPT-4-Turbo. The proxy implementation includes dynamic model selection, comprehensive error handling, multimodal support, and token counting functionality.
 
 ---
 
@@ -69,7 +69,20 @@ This document provides a detailed, field-by-field mapping between Anthropic’s 
 ## Count Tokens Endpoint
 
 - **Anthropic:** Provides `POST /v1/messages/count_tokens` for calculating input token count.
-- **OpenAI:** No direct HTTP endpoint. Token usage is returned in completion responses. For estimation, use libraries like `tiktoken`. The proxy needs its own logic for consistent token counting if pre-computation is required.
+- **OpenAI:** No direct HTTP endpoint. Token usage is returned in completion responses. For estimation, use libraries like `tiktoken`.
+- **Proxy Implementation:** The proxy implements the count_tokens endpoint using tiktoken with GPT-4 encoding (or cl100k_base fallback) to estimate token counts for Anthropic-format requests. This includes counting tokens for messages, system prompts, tool definitions, and content blocks (with special handling for images and tool results).
+
+---
+
+## Dynamic Model Selection
+
+The proxy implements intelligent model selection based on the requested Claude model name:
+
+- **Claude Opus/Sonnet Models** → Maps to the configured "big model" (e.g., `gpt-4-turbo`)
+- **Claude Haiku Models** → Maps to the configured "small model" (e.g., `gpt-3.5-turbo`)
+- **Unknown Models** → Defaults to small model with a warning logged
+
+Model names are matched using case-insensitive substring matching on "opus", "sonnet", and "haiku". The actual target models are configured via environment variables (`BIG_MODEL_NAME`, `SMALL_MODEL_NAME`).
 
 ---
 
@@ -90,7 +103,7 @@ Mapping Anthropic request fields to OpenAI:
 
 | Anthropic Parameter  | OpenAI Parameter        | Mapping and Notes                                                                                                                                                                                               |
 | -------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `model`              | `model`                 | Map the requested Claude model name (e.g., `claude-3-opus-20240229`) to a corresponding OpenAI model name (e.g., `gpt-4-turbo`). The proxy must maintain this mapping.                                            |
+| `model`              | `model`                 | Map the requested Claude model name (e.g., `claude-3-opus-20240229`) to a corresponding OpenAI model name (e.g., `gpt-4-turbo`). The proxy dynamically selects models: Claude Opus/Sonnet → big model, Claude Haiku → small model.                                            |
 | `system` (string)    | `messages`              | If present, prepend the `system` string as the *first* message in the OpenAI `messages` array: `{"role": "system", "content": "<system_string>"}`. If absent, omit this system message.                         |
 | `messages`           | `messages`              | Translate the array of message objects. Roles and content structure require careful conversion (see details below).                                                                                              |
 | `max_tokens`         | `max_tokens`            | Direct mapping. The maximum number of tokens to generate in the response. Ensure value respects the target OpenAI model's limits.                                                                                |
@@ -100,8 +113,8 @@ Mapping Anthropic request fields to OpenAI:
 | `top_p`              | `top_p`                 | Direct mapping (float, 0.0 to 1.0). OpenAI defaults to 1.0. Anthropic recommends using only one of `temperature` or `top_p`.                                                                                     |
 | `top_k`              | Not supported           | Anthropic-specific sampling parameter. OpenAI Chat API does not support `top_k`. **Action:** Ignore/drop this parameter. Behavior cannot be perfectly replicated.                                                 |
 | `metadata.user_id`   | `user`                  | Map the optional `metadata.user_id` string from Anthropic to OpenAI's top-level `user` string for tracking/monitoring. Other fields in `metadata` are not mappable.                                               |
-| `tools`              | `functions`             | Map the array of Anthropic tool definitions to OpenAI's `functions` array. (See Tool Definitions mapping).                                                                                                      |
-| `tool_choice`        | `function_call`         | Map Anthropic's tool choice mechanism to OpenAI's function call control. (See Mapping Tool Choices).                                                                                                            |
+| `tools`              | `tools`                 | Map the array of Anthropic tool definitions to OpenAI's `tools` array. (See Tool Definitions mapping).                                                                                                      |
+| `tool_choice`        | `tool_choice`           | Map Anthropic's tool choice mechanism to OpenAI's tool choice control. (See Mapping Tool Choices).                                                                                                            |
 | `stream_options`     | Not directly supported  | Anthropic's `stream_options` (e.g., `include_usage`) doesn't map directly. Usage in OpenAI streams is not provided per-chunk. Proxy needs to handle usage reporting at the end of the stream.                  |
 
 
@@ -175,9 +188,9 @@ Mapping Anthropic request fields to OpenAI:
     -   Anthropic only allows `user` and `assistant` in the `messages` array. OpenAI also uses `system` (mapped from top-level `system`) and `function` (mapped from Anthropic `tool_result`, see below).
 -   **Content Conversion:**
     -   **Text:** If Anthropic `content` is a string or a single `text` block, use the text directly as OpenAI `content`. If multiple `text` blocks, concatenate them into a single string for OpenAI `content`.
-    -   **Image Blocks:** Anthropic `image` blocks (`type: "image"`) are **not supported** by the standard OpenAI Chat Completions API. **Action:** The proxy must either:
-        1.  Omit the image block entirely.
-        2.  Attempt conversion (e.g., use a separate Vision API or tool to generate a text description) and include the description in the OpenAI message `content`. This is a significant gap.
+    -   **Image Blocks:** Anthropic `image` blocks (`type: "image"`) are **supported** by OpenAI's Chat Completions API when using vision-capable models. **Implementation:** The proxy converts base64 image blocks to OpenAI's multimodal format:
+        -   `{"type": "image_url", "image_url": {"url": "data:media_type;base64,data"}}`
+        -   Only base64 source type is supported; other source types are ignored with warnings.
     -   **Partial Assistant Prefill:** Anthropic allows the last message to be `role: "assistant"` to provide a prefix for the model to continue. OpenAI does **not** support this "prefill" mechanism directly. **Action:** This feature cannot be reliably proxied. Best approach is to disallow or ignore such partial assistant messages in the request.
 
 #### Mapping Tool Result Messages (User Turn)
@@ -222,28 +235,29 @@ This is critical for multi-turn tool use:
 #### Tool Definitions
 
 -   **Anthropic `tools`:** Array of objects, each with `name`, `description`, `input_schema` (JSON Schema).
--   **OpenAI `functions`:** Array of objects, each with `name`, `description`, `parameters` (JSON Schema).
+-   **OpenAI `tools`:** Array of objects, each with `type: "function"` and nested `function` object containing `name`, `description`, `parameters` (JSON Schema).
 
 #### Mapping Tool Definitions
 
--   Directly map each Anthropic `tool` to an OpenAI `function`:
-    -   `name` -> `name`
-    -   `description` -> `description`
-    -   `input_schema` -> `parameters` (both expect JSON Schema format).
--   **Built-in Tools:** Anthropic mentions beta built-in tools (e.g., `bash`). OpenAI has no direct equivalent.Proxy should treat these as custom tools/functions if needed, defining the expected schema, or simply not support them.
+-   Map each Anthropic `tool` to an OpenAI `tools` entry:
+    -   Wrap in `{"type": "function", "function": {...}}`
+    -   `name` -> `function.name`
+    -   `description` -> `function.description`
+    -   `input_schema` -> `function.parameters` (both expect JSON Schema format).
+-   **Built-in Tools:** Anthropic mentions beta built-in tools (e.g., `bash`). OpenAI has no direct equivalent. Proxy should treat these as custom tools if needed, defining the expected schema, or simply not support them.
 
 #### Tool Usage Control
 
 -   **Anthropic `tool_choice`:** Object controlling how the model uses tools (`type`: `auto`, `any`, `tool`, `none`).
--   **OpenAI `function_call`:** String or object controlling function usage (`auto`, `none`, `{"name": "..."}`).
+-   **OpenAI `tool_choice`:** String or object controlling tool usage (`auto`, `none`, `required`, `{"type": "function", "function": {"name": "..."}}`).
 
 #### Mapping Tool Choices
 
-| Anthropic `tool_choice`                     | OpenAI `function_call`      | Notes                                                                                                   |
+| Anthropic `tool_choice`                     | OpenAI `tool_choice`        | Notes                                                                                                   |
 | ------------------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `{"type": "auto"}` (or omitted)             | `"auto"` (or omitted)       | Model decides whether to call a function and which one. (Default behavior for both).                      |
+| `{"type": "auto"}` (or omitted)             | `"auto"` (or omitted)       | Model decides whether to call a tool and which one. (Default behavior for both).                      |
 | `{"type": "any"}`                           | `"auto"`                    | Force the model to use *any* available tool. OpenAI has no direct equivalent. Map to `"auto"` and potentially add instructions in the system prompt (e.g., "You must use a tool if appropriate"). |
-| `{"type": "tool", "name": "tool_name"}`     | `{"name": "tool_name"}`     | Force the model to call the specified tool/function.                                                    |
+| `{"type": "tool", "name": "tool_name"}`     | `{"type": "function", "function": {"name": "tool_name"}}` | Force the model to call the specified tool.                                                    |
 | Omitted / Default                           | Omitted / Default (`"auto"`) | If Anthropic `tool_choice` is not provided, use OpenAI's default (`"auto"`).                             |
 | *(Note: Anthropic also has a "none" type implied by omitting tools)* | `"none"` | If no tools are provided, or if explicit prevention is needed, OpenAI can use `"none"`. This doesn't seem to directly map from an Anthropic option but might be needed for specific proxy logic. |
 
@@ -554,7 +568,8 @@ The proxy should catch OpenAI client errors and return corresponding Anthropic-s
 -   **Preserve Messages:** Include the original OpenAI error message within the translated Anthropic error structure for debugging.
 -   **Request IDs:** Pass through relevant request IDs (`X-Request-ID`, etc.) if available.
 -   **Proxy Context:** Add context indicating the error originated from the upstream provider (OpenAI).
--   **Streaming Errors:** Handle errors that occur *after* the stream has started (e.g., network drop). May require terminating the SSE stream with an error signal if possible, or logging.
+-   **Provider Error Details:** The proxy extracts detailed error information from OpenAI responses, including provider name and raw error data when available (e.g., from OpenRouter metadata).
+-   **Streaming Errors:** Handle errors that occur *after* the stream has started (e.g., network drop). The proxy formats errors as SSE events with proper Anthropic error structure.
 -   **Retries:** Implement appropriate retry logic (e.g., exponential backoff) for transient errors like rate limits (429) or server issues (5xx).
 
 ---
@@ -566,8 +581,8 @@ The proxy should catch OpenAI client errors and return corresponding Anthropic-s
     -   `top_k`: Cannot be mapped.
     -   Partial Assistant Prefill: Cannot be mapped.
     -   Built-in Tools (beta): Require custom mapping or are unsupported.
--   **Unsupported Content Types:**
-    -   **Images:** Standard OpenAI Chat API does not accept image inputs. This is a major gap requiring workarounds (omission, OCR/captioning).
+-   **Image Handling:**
+    -   **Images:** OpenAI Chat API supports image inputs with vision-capable models. The proxy converts Anthropic base64 image blocks to OpenAI's multimodal message format automatically.
 -   **Role Mapping for Tool Results:** The conversion between Anthropic's `user` role + `tool_result` content and OpenAI's `function` role is crucial and requires careful state management in the proxy.
 -   **Tool Choice `any`:** Anthropic's `{"type": "any"}` cannot be directly enforced in OpenAI; mapping to `"auto"` is the closest functional equivalent.
 -   **System Prompt Handling:** Ensure the Anthropic `system` prompt is consistently prepended as the first `system` role message in the OpenAI request history for every turn.
